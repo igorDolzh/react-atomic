@@ -1,0 +1,56 @@
+{
+  "name": "react-atomic",
+  "version": "0.1.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/igorDolzh/fun-task-axios"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "webpack",
+    "build:min": "NODE_ENV=production webpack",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^7.1.1",
+    "babel-loader": "^7.1.2",
+    "babel-preset-latest": "^6.22.0",
+    "babel-preset-stage-2": "^6.22.0",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^14.1.0",
+    "fun-task": "^1.5.2",
+    "webpack": "^3.6.0"
+  },
+  "dependencies": {
+    "axios": "^0.17.0",
+    "babel-jest": "^20.0.3",
+    "babel-preset-stage-0": "^6.24.1",
+    "jest": "^20.0.4",
+    "ramda": "^0.24.1"
+  },
+  "jest": {
+    "verbose": true,
+    "cache": false,
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    },
+    "moduleFileExtensions": [
+      "js"
+    ],
+    "globals": {
+      "NODE_ENV": "test"
+    },
+    "moduleDirectories": [
+      "<rootDir>/node_modules",
+      "<rootDir>/src"
+    ],
+    "moduleNameMapper": {
+      "^app/(.*)$": "<rootDir>/src/$1"
+    },
+    "transformIgnorePatterns": [
+      "<rootDir>/node_modules/(?!iggy-common)"
+    ]
+  }
+}
