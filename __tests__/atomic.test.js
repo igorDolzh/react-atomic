@@ -5,5 +5,5 @@ import {
   } from 'ramda'
   
   import {
-    request, get, post, patch, remove
+    initializeAtomic
   } from '../src/main'

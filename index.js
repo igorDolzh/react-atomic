@@ -1,3 +1,3 @@
 export {
-    request, get, post, patch, remove
+  initializeAtomic
   } from './src/main'
