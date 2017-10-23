@@ -2,9 +2,9 @@ import { assoc, assocPath, path, not, merge, pipe, isEmpty, map, T, any, keys, f
 import { createElement, PureComponent } from 'react'
 import { atom, watch, deref, reset, swap } from 'atom-observable'
 
-export let applyIf = (func, ...args) => is(Function, func) ? apply(func, args) : null
+let applyIf = (func, ...args) => is(Function, func) ? apply(func, args) : null
 
-export let isObjectEmpty = (obj) => {
+let isObjectEmpty = (obj) => {
   if (not(is(Object, obj))){
     return false
   }
@@ -19,10 +19,7 @@ export let isObjectEmpty = (obj) => {
   }, objKeys)
 }
 
-export let loadingA = atom({})
-export let errorA = atom({})
-
-export let runTask = (ref, task, options = {}) => {
+let runTask = ({ loading, error }) => (ref, task, options = {}) => {
   let { after, holdValue = false } = options
 
   let name = getCursorName(ref)
@@ -30,20 +27,20 @@ export let runTask = (ref, task, options = {}) => {
 
   let runTaskFunc = () => task.run({
     success: (data) => {
-      swap(loadingA, assoc(name, false))
+      swap(loading, assoc(name, false))
       reset(ref, data)
       applyIf(after, data)
     },
 
     failure: (error) => {
-      swap(loadingA, assoc(name, false))
+      swap(loading, assoc(name, false))
       let data = path(['data'], error)
-      swap(errorA, assoc(name, data || error))
+      swap(error, assoc(name, data || error))
     }
   })
 
   if (not(refValue) || isObjectEmpty(refValue)) {
-    swap(loadingA, assoc(name, true))
+    swap(loading, assoc(name, true))
     runTaskFunc()
   } else if (not(holdValue)) {
     runTaskFunc()
@@ -53,13 +50,13 @@ export let runTask = (ref, task, options = {}) => {
 }
 
 
-export let runTaskArray = (sequence) => {
+let runTaskArray = (sequence) => {
   forEach((args) => {
     runTask(...args)
   }, sequence)
 }
 
-export let getCursorName = (cursor) => {
+let getCursorName = (cursor) => {
   let cursorPath = path(['cursorPath'], cursor)
   if (cursorPath) {
     return cursorPath.join('-')
@@ -68,11 +65,11 @@ export let getCursorName = (cursor) => {
   }
 }
 
-export let isLoading = (cursor) => !!deref(loadingA)[getCursorName(cursor)]
-export let isError = (cursor) => deref(errorA)[getCursorName(cursor)]
+let isLoading = ({loading}) => (cursor) => !!deref(loading)[getCursorName(cursor)]
+let isError = ({error}) => (cursor) => deref(error)[getCursorName(cursor)]
 
-export let Atomic = ({
-  defaultState,
+let Atomic = ({
+  defaultState = {},
   defaultLoading,
   defaultError,
   defaultOptions,
@@ -154,7 +151,7 @@ class Atomic extends PureComponent {
   setErrorWatcher() {
     let options = merge(defaultOptions, newOptions)
     if (options.showErrorScreen) {
-      let unsub = watch(errorA, () => {
+      let unsub = watch(defaultSubs.error, () => {
         this.getError()
       })
 
@@ -167,7 +164,7 @@ class Atomic extends PureComponent {
   getError() {
     let { errorSubs } = this.state
     let errorSubsKeys = keys(errorSubs)
-    let errorState = deref(errorA)
+    let errorState = deref(defaultSubs.error)
     let errorToShow = null
 
     forEach((key) => {
@@ -201,18 +198,18 @@ class Atomic extends PureComponent {
   clearErrors() {
     let { errorSubs } = this.state
     let errorSubsKeys = keys(errorSubs)
-    let errorState = deref(errorA)
+    let errorState = deref(defaultSubs.error)
     forEach((key) => {
       if (errorState[key]) {
         errorState = assoc(key, null, errorState)
       }
     }, errorSubsKeys)
-    reset(errorA, errorState)
+    reset(defaultSubs.error, errorState)
   }
 
   isLoading() {
     let { loadingSubs, options } = this.state
-    let loadingState = deref(loadingA)
+    let loadingState = deref(defaultSubs.loading)
     let loadingSubsKeys = keys(loadingSubs)
     return any((sub) => loadingState[sub], loadingSubsKeys) && options.waitForAllTasks
   }
@@ -225,7 +222,7 @@ class Atomic extends PureComponent {
   renderError() {
     let { errorToShow, options } = this.state
     let defaultOnContinue = () => {
-      reset(errorA, {})
+      reset(defaultSubs.error, {})
       this.setState({errorToShow: null})
       applyIf(tasks)
     }
@@ -248,5 +245,30 @@ class Atomic extends PureComponent {
     return createElement(DumbComponent, merge(this.props, this.state.store))
   }
 
+}
+
+export let initializeAtomic = ({
+  defaultState,
+  defaultLoading,
+  defaultError,
+  defaultOptions,
+  defaultSubs
+}) => ({
+  SubsAtom: Atomic({
+    defaultState,
+    defaultLoading,
+    defaultError,
+    defaultOptions,
+    defaultSubs
+  }),
+  runTask: runTask(defaultSubs),
+  runTaskArray: runTaskArray,
+  getCursorName: getCursorName,
+  isLoading: isLoading(defaultSubs),
+  isError: isError(defaultSubs)
+})
+
+export default {
+  initializeAtomic
 }
 
