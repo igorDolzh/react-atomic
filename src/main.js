@@ -5,42 +5,42 @@ import { atom, watch, deref, reset, swap } from 'atom-observable'
 let applyIf = (func, ...args) => is(Function, func) ? apply(func, args) : null
 
 let isObjectEmpty = (obj) => {
-  if (not(is(Object, obj))){
+  if (not(is(Object, obj))) {
     return false
   }
   let objKeys = keys(obj)
   return all((key) => {
     let val = obj[key]
-    if (not(isEmpty(val))) {
-        return isObjectEmpty(val)
-    } else {
-      return true
+    if (not(isEmpty(val)) && not(isNil(val))) {
+      return isObjectEmpty(val)
     }
+    return true
   }, objKeys)
 }
 
-let runTask = ({ loading, error }) => (ref, task, options = {}) => {
+export let loadingState = atom({})
+export let errorState = atom({})
+
+let runTaskFactory = ({ loading: loadingA, error: errorA }) => (ref, task, options = {}) => {
   let { after, holdValue = false } = options
 
   let name = getCursorName(ref)
   let refValue = deref(ref)
-
   let runTaskFunc = () => task.run({
     success: (data) => {
-      swap(loading, assoc(name, false))
+      swap(loadingA, assoc(name, false))
       reset(ref, data)
       applyIf(after, data)
     },
 
     failure: (error) => {
-      swap(loading, assoc(name, false))
+      swap(loadingA, assoc(name, false))
       let data = path(['data'], error)
-      swap(error, assoc(name, data || error))
+      swap(errorA, assoc(name, data || error))
     }
   })
-
   if (not(refValue) || isObjectEmpty(refValue)) {
-    swap(loading, assoc(name, true))
+    swap(loadingA, assoc(name, true))
     runTaskFunc()
   } else if (not(holdValue)) {
     runTaskFunc()
@@ -50,26 +50,22 @@ let runTask = ({ loading, error }) => (ref, task, options = {}) => {
 }
 
 
-let runTaskArray = (sequence) => {
+let runTaskArrayFactory = (defaultSubs) => (sequence) => {
   forEach((args) => {
-    runTask(...args)
+    runTaskFactory(defaultSubs)(...args)
   }, sequence)
 }
 
-let getCursorName = (cursor) => {
-  let cursorPath = path(['cursorPath'], cursor)
-  if (cursorPath) {
-    return cursorPath.join('-')
-  } else {
-    return '-'
-  }
-}
+export let getCursorName = (cursor) => Maybe.toMaybe(cursor)
+                                                        .chain(pathOpt(['cursorPath']))
+                                                        .getOrElse([])
+                                                        .join('-')
 
-let isLoading = ({loading}) => (cursor) => !!deref(loading)[getCursorName(cursor)]
-let isError = ({error}) => (cursor) => deref(error)[getCursorName(cursor)]
+let isLoadingFactory = ({loading}) => (cursor) => !!deref(loading)[getCursorName(cursor)]
+let getErrorFactory = ({error}) => (cursor) => deref(error)[getCursorName(cursor)] || null
 
 let Atomic = ({
-  defaultState = {},
+  defaultState,
   defaultLoading,
   defaultError,
   defaultOptions,
@@ -83,16 +79,13 @@ let Atomic = ({
   DumbComponent) =>
 class Atomic extends PureComponent {
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      store: {},
-      unsubs: {},
-      loadingSubs: {},
-      errorSubs: {},
-      errorToShow: null,
-      options: defaultOptions,
-    }
+  state = {
+    store: {},
+    unsubs: {},
+    loadingSubs: {},
+    errorSubs: {},
+    errorToShow: null,
+    options: defaultOptions,
   }
 
   componentWillMount() {
@@ -242,33 +235,66 @@ class Atomic extends PureComponent {
       return this.renderLoading()
     }
 
-    return createElement(DumbComponent, merge(this.props, this.state.store))
+    return h(DumbComponent, merge(this.props, this.state.store))
   }
 
 }
 
-export let initializeAtomic = ({
+export let buildAtomic = ({
   defaultState,
   defaultLoading,
   defaultError,
   defaultOptions,
   defaultSubs
 }) => ({
-  SubsAtom: Atomic({
+  SubsAtoms: Atomic({
     defaultState,
     defaultLoading,
     defaultError,
     defaultOptions,
     defaultSubs
   }),
-  runTask: runTask(defaultSubs),
-  runTaskArray: runTaskArray,
-  getCursorName: getCursorName,
-  isLoading: isLoading(defaultSubs),
-  isError: isError(defaultSubs)
+  runTask: runTaskFactory(defaultSubs),
+  runTaskArray: runTaskArrayFactory(defaultSubs),
+  getCursorName,
+  isLoading: isLoadingFactory(defaultSubs),
+  getError: getErrorFactory(defaultSubs),
+  stateA: atom(defaultState)
 })
 
+let atomicIntance = buildAtomic({
+  defaultState: merge(defaultState, routerState),
+  defaultLoading: () => h(LoaderBox),
+  defaultError: (error, onContinue) => h(StatusSlide, {
+    title: error.title || error.message,
+    subtitle: error.subtitle,
+    isAnimation: true,
+    error: true,
+    buttonText: 'Try again',
+    onContinue
+  }),
+  defaultOptions: {
+    onErrorContinue: null,
+    showErrorScreen: false,
+    showDefaultPreloader: false,
+    waitForAllTasks: true,
+    resetOnUnMount: []
+  },
+  defaultSubs: {
+    loading: loadingState,
+    error: errorState
+  }
+})
+
+export let SubsAtoms = atomicIntance.SubsAtoms
+export let runTask = atomicIntance.runTask
+export let runTaskArray = atomicIntance.runTaskArray
+export let isLoading = atomicIntance.isLoading
+export let getError = atomicIntance.getError
+export let stateA = atomicIntance.stateA
+
 export default {
-  initializeAtomic
+  atomic: atomicIntance
 }
+
 
