@@ -2,6 +2,8 @@
 
 Atomic is a HOC which allows you create a React component subcribed to certain list of atoms. You could do that using SubsAtoms function, but before that you need to create your unique SubsAtoms with the help of factory called *'buildAtomic'* function. 
 
+### buildAtomic
+
 *'buildAtomic'* takes an object as a parameter with the certain options:
 
   - **defaultState**: Object. (required) Default state for root atom that will be used for Atomic (P.s. I guess, most of the time it would an object with long range of properties with default values)
