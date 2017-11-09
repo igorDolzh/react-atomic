@@ -1,4 +1,4 @@
-import { assoc, assocPath, path, not, merge, pipe, isEmpty, map, T, any, keys, forEach, intersection, all, is, apply } from 'ramda'
+import { assoc, assocPath, path, not, merge, pipe, isEmpty, map, isNil, dissoc, flatten, prepend, T, any, keys, forEach, intersection, all, is, apply } from 'ramda'
 import { createElement, PureComponent } from 'react'
 import { atom, watch, deref, reset, swap } from 'atom-observable'
 
@@ -21,24 +21,31 @@ let isObjectEmpty = (obj) => {
 export let loadingState = atom({})
 export let errorState = atom({})
 
-let runTaskFactory = ({ loading: loadingA, error: errorA }) => (ref, task, options = {}) => {
+let runTaskFactory = ({ loading: loadingA, error: errorA, cancel: cancelA }) => (ref, task, options = {}) => {
   let { after, holdValue = false } = options
 
   let name = getCursorName(ref)
   let refValue = deref(ref)
-  let runTaskFunc = () => task.run({
-    success: (data) => {
-      swap(loadingA, assoc(name, false))
-      reset(ref, data)
-      applyIf(after, data)
-    },
 
-    failure: (error) => {
-      swap(loadingA, assoc(name, false))
-      let data = path(['data'], error)
-      swap(errorA, assoc(name, data || error))
-    }
-  })
+  let runTaskFunc = () => {
+    let cancelTask = task.run({
+      success: (data) => {
+        swap(loadingA, assoc(name, false))
+        swap(cancelA, dissoc(name))
+        reset(ref, data)
+        applyIf(after, data)
+      },
+
+      failure: (error) => {
+        swap(loadingA, assoc(name, false))
+        swap(cancelA, dissoc(name))
+        let data = path(['data'], error)
+        swap(errorA, assoc(name, data || error))
+      }
+    })
+    swap(cancelA, assoc(name, cancelTask))
+  }
+
   if (not(refValue) || isObjectEmpty(refValue)) {
     swap(loadingA, assoc(name, true))
     runTaskFunc()
@@ -49,6 +56,13 @@ let runTaskFactory = ({ loading: loadingA, error: errorA }) => (ref, task, optio
   }
 }
 
+export let getFullCursorPath = (cursor) => {
+  let { ref, cursorPath } = cursor
+  if (!ref) {
+    return []
+  }
+  return flatten(prepend(getFullCursorPath(ref), cursorPath))
+}
 
 let runTaskArrayFactory = (defaultSubs) => (sequence) => {
   forEach((args) => {
@@ -56,10 +70,7 @@ let runTaskArrayFactory = (defaultSubs) => (sequence) => {
   }, sequence)
 }
 
-export let getCursorName = (cursor) => Maybe.toMaybe(cursor)
-                                                        .chain(pathOpt(['cursorPath']))
-                                                        .getOrElse([])
-                                                        .join('-')
+export let getCursorName = (cursor) => getFullCursorPath(cursor).join('-')
 
 let isLoadingFactory = ({loading}) => (cursor) => !!deref(loading)[getCursorName(cursor)]
 let getErrorFactory = ({error}) => (cursor) => deref(error)[getCursorName(cursor)] || null
@@ -95,13 +106,17 @@ class Atomic extends PureComponent {
   }
 
   componentDidMount() {
-    applyIf(tasks)
+    applyIf(tasks, {
+      props: this.props,
+      state: this.state
+    })
   }
 
   componentWillUnmount() {
     this.unSubscribeWatchers()
     this.resetOnUnMount()
     this.clearErrors()
+    this.cancelTasks()
   }
 
   setOptions() {
@@ -111,7 +126,10 @@ class Atomic extends PureComponent {
   }
 
   setWatchers() {
-    let subsObj = merge(defaultSubs, subs())
+    let subsObj = merge(defaultSubs, subs({
+      props: this.props,
+      state: this.state
+    }))
     let subsKeys = keys(subsObj)
 
     let { store } = this.state
@@ -183,7 +201,7 @@ class Atomic extends PureComponent {
     let { options } = this.state
     let { resetOnUnMount } = options
     forEach((cursor) => {
-      let { cursorPath = [] } = cursor
+      let cursorPath = getFullCursorPath(cursor)
       reset(cursor, path(cursorPath, defaultState))
     }, resetOnUnMount)
   }
@@ -198,6 +216,17 @@ class Atomic extends PureComponent {
       }
     }, errorSubsKeys)
     reset(defaultSubs.error, errorState)
+  }
+
+  cancelTasks() {
+    let { loadingSubs } = this.state
+    let cancelState = deref(defaultSubs.cancel)
+    let cancelStateKeys = keys(cancelState)
+    let loadingSubsKeys = keys(loadingSubs)
+
+    let cancelStateSubsKeys = intersection(cancelStateKeys, loadingSubsKeys)
+
+    forEach((key) => applyIf(cancelState[key]), cancelStateSubsKeys)
   }
 
   isLoading() {
@@ -235,17 +264,20 @@ class Atomic extends PureComponent {
       return this.renderLoading()
     }
 
-    return h(DumbComponent, merge(this.props, this.state.store))
+    return createElement(DumbComponent, merge(this.props, this.state.store))
   }
 
 }
 
-export let buildAtomic = ({
+let buildAtomic = ({
   defaultState,
   defaultLoading,
   defaultError,
   defaultOptions,
-  defaultSubs
+  defaultSubs = {
+    loading: loadingState,
+    error: errorState
+  }
 }) => ({
   SubsAtoms: Atomic({
     defaultState,
@@ -262,39 +294,5 @@ export let buildAtomic = ({
   stateA: atom(defaultState)
 })
 
-let atomicIntance = buildAtomic({
-  defaultState: merge(defaultState, routerState),
-  defaultLoading: () => h(LoaderBox),
-  defaultError: (error, onContinue) => h(StatusSlide, {
-    title: error.title || error.message,
-    subtitle: error.subtitle,
-    isAnimation: true,
-    error: true,
-    buttonText: 'Try again',
-    onContinue
-  }),
-  defaultOptions: {
-    onErrorContinue: null,
-    showErrorScreen: false,
-    showDefaultPreloader: false,
-    waitForAllTasks: true,
-    resetOnUnMount: []
-  },
-  defaultSubs: {
-    loading: loadingState,
-    error: errorState
-  }
-})
-
-export let SubsAtoms = atomicIntance.SubsAtoms
-export let runTask = atomicIntance.runTask
-export let runTaskArray = atomicIntance.runTaskArray
-export let isLoading = atomicIntance.isLoading
-export let getError = atomicIntance.getError
-export let stateA = atomicIntance.stateA
-
-export default {
-  atomic: atomicIntance
-}
-
+export default buildAtomic
 
