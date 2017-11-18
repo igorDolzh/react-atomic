@@ -1,3 +1,2 @@
-export {
-  initializeAtomic
-  } from './src/atomic'
+import buildAtomic from './src/atomic'
+export default buildAtomic
