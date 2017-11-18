@@ -6,4 +6,4 @@ import {
   
   import {
     initializeAtomic
-  } from '../src/main'
+  } from '../src/atomic'

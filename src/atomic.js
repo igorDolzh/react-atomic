@@ -90,13 +90,16 @@ let Atomic = ({
   DumbComponent) =>
 class Atomic extends PureComponent {
 
-  state = {
-    store: {},
-    unsubs: {},
-    loadingSubs: {},
-    errorSubs: {},
-    errorToShow: null,
-    options: defaultOptions,
+  constructor(props) {
+    super(props)
+    this.state = {
+      store: {},
+      unsubs: {},
+      loadingSubs: {},
+      errorSubs: {},
+      errorToShow: null,
+      options: defaultOptions,
+    }
   }
 
   componentWillMount() {

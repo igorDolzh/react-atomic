@@ -4986,16 +4986,10 @@ module.exports = warning;
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "applyIf", function() { return applyIf; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isObjectEmpty", function() { return isObjectEmpty; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "loadingA", function() { return loadingA; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "errorA", function() { return errorA; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "runTask", function() { return runTask; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "runTaskArray", function() { return runTaskArray; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "loadingState", function() { return loadingState; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "errorState", function() { return errorState; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getFullCursorPath", function() { return getFullCursorPath; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getCursorName", function() { return getCursorName; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isLoading", function() { return isLoading; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isError", function() { return isError; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Atomic", function() { return Atomic; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda__ = __webpack_require__(128);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_ramda__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_react__ = __webpack_require__(325);
@@ -5014,36 +5008,40 @@ let isObjectEmpty = obj => {
   let objKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(obj);
   return Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["all"])(key => {
     let val = obj[key];
-    if (Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["not"])(Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["isEmpty"])(val))) {
+    if (Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["not"])(Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["isEmpty"])(val)) && Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["not"])(Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["isNil"])(val))) {
       return isObjectEmpty(val);
-    } else {
-      return true;
     }
+    return true;
   }, objKeys);
 };
 
-let loadingA = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["a" /* atom */])({});
-let errorA = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["a" /* atom */])({});
+let loadingState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["a" /* atom */])({});
+let errorState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["a" /* atom */])({});
 
-let runTask = (ref, task, options = {}) => {
+let runTaskFactory = ({ loading: loadingA, error: errorA, cancel: cancelA }) => (ref, task, options = {}) => {
   let { after, holdValue = false } = options;
 
   let name = getCursorName(ref);
   let refValue = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(ref);
 
-  let runTaskFunc = () => task.run({
-    success: data => {
-      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(loadingA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, false));
-      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(ref, data);
-      applyIf(after, data);
-    },
+  let runTaskFunc = () => {
+    let cancelTask = task.run({
+      success: data => {
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(loadingA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, false));
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(cancelA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["dissoc"])(name));
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(ref, data);
+        applyIf(after, data);
+      },
 
-    failure: error => {
-      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(loadingA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, false));
-      let data = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["path"])(['data'], error);
-      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(errorA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, data || error));
-    }
-  });
+      failure: error => {
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(loadingA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, false));
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(cancelA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["dissoc"])(name));
+        let data = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["path"])(['data'], error);
+        Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(errorA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, data || error));
+      }
+    });
+    Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(cancelA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, cancelTask));
+  };
 
   if (Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["not"])(refValue) || isObjectEmpty(refValue)) {
     Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["d" /* swap */])(loadingA, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(name, true));
@@ -5055,23 +5053,24 @@ let runTask = (ref, task, options = {}) => {
   }
 };
 
-let runTaskArray = sequence => {
+let getFullCursorPath = cursor => {
+  let { ref, cursorPath } = cursor;
+  if (!ref) {
+    return [];
+  }
+  return Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["flatten"])(Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["prepend"])(getFullCursorPath(ref), cursorPath));
+};
+
+let runTaskArrayFactory = defaultSubs => sequence => {
   Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["forEach"])(args => {
-    runTask(...args);
+    runTaskFactory(defaultSubs)(...args);
   }, sequence);
 };
 
-let getCursorName = cursor => {
-  let cursorPath = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["path"])(['cursorPath'], cursor);
-  if (cursorPath) {
-    return cursorPath.join('-');
-  } else {
-    return '-';
-  }
-};
+let getCursorName = cursor => getFullCursorPath(cursor).join('-');
 
-let isLoading = cursor => !!Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(loadingA)[getCursorName(cursor)];
-let isError = cursor => Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(errorA)[getCursorName(cursor)];
+let isLoadingFactory = ({ loading }) => cursor => !!Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(loading)[getCursorName(cursor)];
+let getErrorFactory = ({ error }) => cursor => Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(error)[getCursorName(cursor)] || null;
 
 let Atomic = ({
   defaultState,
@@ -5104,13 +5103,17 @@ let Atomic = ({
   }
 
   componentDidMount() {
-    applyIf(tasks);
+    applyIf(tasks, {
+      props: this.props,
+      state: this.state
+    });
   }
 
   componentWillUnmount() {
     this.unSubscribeWatchers();
     this.resetOnUnMount();
     this.clearErrors();
+    this.cancelTasks();
   }
 
   setOptions() {
@@ -5120,7 +5123,10 @@ let Atomic = ({
   }
 
   setWatchers() {
-    let subsObj = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["merge"])(defaultSubs, subs());
+    let subsObj = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["merge"])(defaultSubs, subs({
+      props: this.props,
+      state: this.state
+    }));
     let subsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(subsObj);
 
     let { store } = this.state;
@@ -5153,7 +5159,7 @@ let Atomic = ({
   setErrorWatcher() {
     let options = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["merge"])(defaultOptions, newOptions);
     if (options.showErrorScreen) {
-      let unsub = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["e" /* watch */])(errorA, () => {
+      let unsub = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["e" /* watch */])(defaultSubs.error, () => {
         this.getError();
       });
 
@@ -5166,7 +5172,7 @@ let Atomic = ({
   getError() {
     let { errorSubs } = this.state;
     let errorSubsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(errorSubs);
-    let errorState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(errorA);
+    let errorState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(defaultSubs.error);
     let errorToShow = null;
 
     Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["forEach"])(key => {
@@ -5194,7 +5200,7 @@ let Atomic = ({
     let { options } = this.state;
     let { resetOnUnMount } = options;
     Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["forEach"])(cursor => {
-      let { cursorPath = [] } = cursor;
+      let cursorPath = getFullCursorPath(cursor);
       Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(cursor, Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["path"])(cursorPath, defaultState));
     }, resetOnUnMount);
   }
@@ -5202,18 +5208,29 @@ let Atomic = ({
   clearErrors() {
     let { errorSubs } = this.state;
     let errorSubsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(errorSubs);
-    let errorState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(errorA);
+    let errorState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(defaultSubs.error);
     Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["forEach"])(key => {
       if (errorState[key]) {
         errorState = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["assoc"])(key, null, errorState);
       }
     }, errorSubsKeys);
-    Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(errorA, errorState);
+    Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(defaultSubs.error, errorState);
+  }
+
+  cancelTasks() {
+    let { loadingSubs } = this.state;
+    let cancelState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(defaultSubs.cancel);
+    let cancelStateKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(cancelState);
+    let loadingSubsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(loadingSubs);
+
+    let cancelStateSubsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["intersection"])(cancelStateKeys, loadingSubsKeys);
+
+    Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["forEach"])(key => applyIf(cancelState[key]), cancelStateSubsKeys);
   }
 
   isLoading() {
     let { loadingSubs, options } = this.state;
-    let loadingState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(loadingA);
+    let loadingState = Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["b" /* deref */])(defaultSubs.loading);
     let loadingSubsKeys = Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["keys"])(loadingSubs);
     return Object(__WEBPACK_IMPORTED_MODULE_0_ramda__["any"])(sub => loadingState[sub], loadingSubsKeys) && options.waitForAllTasks;
   }
@@ -5226,7 +5243,7 @@ let Atomic = ({
   renderError() {
     let { errorToShow, options } = this.state;
     let defaultOnContinue = () => {
-      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(errorA, {});
+      Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["c" /* reset */])(defaultSubs.error, {});
       this.setState({ errorToShow: null });
       applyIf(tasks);
     };
@@ -5250,6 +5267,33 @@ let Atomic = ({
   }
 
 };
+
+let buildAtomic = ({
+  defaultState,
+  defaultLoading,
+  defaultError,
+  defaultOptions,
+  defaultSubs = {
+    loading: loadingState,
+    error: errorState
+  }
+}) => ({
+  SubsAtoms: Atomic({
+    defaultState,
+    defaultLoading,
+    defaultError,
+    defaultOptions,
+    defaultSubs
+  }),
+  runTask: runTaskFactory(defaultSubs),
+  runTaskArray: runTaskArrayFactory(defaultSubs),
+  getCursorName,
+  isLoading: isLoadingFactory(defaultSubs),
+  getError: getErrorFactory(defaultSubs),
+  stateA: Object(__WEBPACK_IMPORTED_MODULE_2_atom_observable__["a" /* atom */])(defaultState)
+});
+
+/* harmony default export */ __webpack_exports__["default"] = (buildAtomic);
 
 /***/ }),
 /* 128 */
