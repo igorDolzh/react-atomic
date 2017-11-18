@@ -1,3 +1,3 @@
 export {
   initializeAtomic
-  } from './src/main'
+  } from './src/atomic'
