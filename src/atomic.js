@@ -21,12 +21,25 @@ let isObjectEmpty = (obj) => {
 export let loadingState = atom({})
 export let errorState = atom({})
 
+import { curry, assoc, path, not, merge, mergeAll, concat, toPairs, equals, dissoc, prepend, values, flatten, any, keys, forEach, intersection } from 'ramda'
+import { createElement as h, PureComponent } from 'react'
+import { defaultState, routerState, tokenInfoState } from 'app/defaultState'
+import { StatusSlide } from 'app/blocks/Slide'
+import { atom, watch, deref, reset, swap, cursor } from 'app/helpers/atom'
+import { LoaderBox } from 'app/blocks/Transactions/Transactions'
+import { applyIf } from 'app/helpers/func'
+import { isObjectEmpty } from 'app/helpers/utils'
+
+
+export let loadingState = atom({})
+export let errorState = atom({})
+export let cancelState = atom({})
+
 let runTaskFactory = ({ loading: loadingA, error: errorA, cancel: cancelA }) => (ref, task, options = {}) => {
   let { after, holdValue = false } = options
 
   let name = getCursorName(ref)
   let refValue = deref(ref)
-
   let runTaskFunc = () => {
     let cancelTask = task.run({
       success: (data) => {
@@ -45,7 +58,6 @@ let runTaskFactory = ({ loading: loadingA, error: errorA, cancel: cancelA }) => 
     })
     swap(cancelA, assoc(name, cancelTask))
   }
-
   if (not(refValue) || isObjectEmpty(refValue)) {
     swap(loadingA, assoc(name, true))
     runTaskFunc()
@@ -82,7 +94,7 @@ let Atomic = ({
   defaultOptions,
   defaultSubs
 }) =>
-  ({
+  curry(({
     subs,
     tasks,
     options: newOptions = {}
@@ -90,16 +102,14 @@ let Atomic = ({
   DumbComponent) =>
 class Atomic extends PureComponent {
 
-  constructor(props) {
-    super(props)
-    this.state = {
-      store: {},
-      unsubs: {},
-      loadingSubs: {},
-      errorSubs: {},
-      errorToShow: null,
-      options: defaultOptions,
-    }
+  state = {
+    store: {},
+    unsubs: {},
+    tasksStarted: false,
+    loadingSubs: {},
+    errorSubs: {},
+    errorToShow: null,
+    options: defaultOptions,
   }
 
   componentWillMount() {
@@ -109,57 +119,109 @@ class Atomic extends PureComponent {
   }
 
   componentDidMount() {
+    this.runTasks()
+  }
+
+  runTasks() {
     applyIf(tasks, {
       props: this.props,
-      state: this.state
+      state: this.state,
+      elem: DumbComponent
+    })
+    this.setState({
+      tasksStarted: true
     })
   }
 
   componentWillUnmount() {
-    this.unSubscribeWatchers()
-    this.resetOnUnMount()
+    this.unsubscribeWatchers()
+    this.resetOnUnmount()
     this.clearErrors()
     this.cancelTasks()
   }
 
   setOptions() {
-    this.setState({
+    this.setState(() => ({
       options: merge(defaultOptions, newOptions)
-    })
+    }))
+  }
+
+  applyAllFunctions(array) {
+    let obj = {}
+
+    while (array.length !== 0) {
+      let fn = array.shift()
+      obj = fn(obj)
+    }
+
+    return obj
   }
 
   setWatchers() {
-    let subsObj = merge(defaultSubs, subs({
+    let subsObj = subs({
       props: this.props,
       state: this.state
-    }))
+    })
     let subsKeys = keys(subsObj)
-
+    this.batch = []
+    this.batchLoading = []
     let { store } = this.state
     let unsubs = {}
+    let unLoadingSubs = {}
+    let unErrorSubs = {}
     let loadingSubs = {}
     let errorSubs = {}
 
     forEach((key) => {
       store = assoc(key, deref(subsObj[key]), store)
-      loadingSubs = assoc(getCursorName(subsObj[key]), true, loadingSubs)
-      errorSubs = assoc(getCursorName(subsObj[key]), true, errorSubs)
+      let cursorName = getCursorName(subsObj[key])
+      loadingSubs = assoc(cursorName, true, loadingSubs)
+      errorSubs = assoc(cursorName, true, errorSubs)
 
+      let unLoadingSub = watch(cursor(defaultSubs.loading, [cursorName]), (newVal) => {
+        if (this.isLoading()) {
+          this.batchLoading.push(assoc(cursorName, newVal))
+        } else {
+          this.setState((prevState) => {
+            let batch = this.applyAllFunctions(this.batch)
+            let batchLoading = this.applyAllFunctions(this.batchLoading)
+            return ({
+              store: merge(assoc('loading',
+            merge(batchLoading, {...prevState.store.loading, [cursorName]: newVal}),
+            prevState.store), batch)
+            })
+          })
+        }
+      }
+    )
       let unsub = watch(subsObj[key], (newVal) => {
-        this.setState((prevState) => ({
-          store: assoc(key, newVal, prevState.store)
-        }))
+        if (this.isLoading()) {
+          this.batch.push(assoc(key, newVal))
+        } else {
+          this.setState((prevState) => {
+            let batch = this.applyAllFunctions(this.batch)
+            return ({
+              store: merge(assoc(key, newVal, prevState.store), batch)
+            })
+          })
+        }
       })
 
       unsubs[key] = unsub
+      unLoadingSubs[key] = unLoadingSub
     }, subsKeys)
 
-    this.setState({
+    toPairs(defaultSubs).forEach((pair) => {
+      store = assoc(pair[0], deref(pair[1]), store)
+    })
+
+    this.setState(() => ({
       store,
       unsubs,
       loadingSubs,
       errorSubs,
-    })
+      unLoadingSubs,
+    }))
   }
 
   setErrorWatcher() {
@@ -188,25 +250,28 @@ class Atomic extends PureComponent {
     }, errorSubsKeys)
 
     if (errorToShow) {
-      this.setState({
+      this.setState(() => ({
         errorToShow
-      })
+      }))
     }
   }
 
-  unSubscribeWatchers() {
-    let { unsubs } = this.state
-    let unSubsKeys = keys(unsubs)
-    forEach((key) => { applyIf(unsubs[key]) }, unSubsKeys)
+  unsubscribeWatchers() {
+    let { unsubs, unLoadingSubs } = this.state
+
+    let unSubsValues = values(unsubs)
+    let unLoadingSubsValues = values(unLoadingSubs)
+    let allUnSubs = concat(unSubsValues, unLoadingSubsValues)
+    allUnSubs.forEach((unsub) => applyIf(unsub))
   }
 
-  resetOnUnMount() {
+  resetOnUnmount() {
     let { options } = this.state
-    let { resetOnUnMount } = options
+    let { resetOnUnmount } = options
     forEach((cursor) => {
       let cursorPath = getFullCursorPath(cursor)
       reset(cursor, path(cursorPath, defaultState))
-    }, resetOnUnMount)
+    }, resetOnUnmount)
   }
 
   clearErrors() {
@@ -228,7 +293,6 @@ class Atomic extends PureComponent {
     let loadingSubsKeys = keys(loadingSubs)
 
     let cancelStateSubsKeys = intersection(cancelStateKeys, loadingSubsKeys)
-
     forEach((key) => applyIf(cancelState[key]), cancelStateSubsKeys)
   }
 
@@ -236,7 +300,7 @@ class Atomic extends PureComponent {
     let { loadingSubs, options } = this.state
     let loadingState = deref(defaultSubs.loading)
     let loadingSubsKeys = keys(loadingSubs)
-    return any((sub) => loadingState[sub], loadingSubsKeys) && options.waitForAllTasks
+    return any((sub) => equals(loadingState[sub], true), loadingSubsKeys) && options.waitForAllTasks
   }
 
   isError() {
@@ -248,7 +312,7 @@ class Atomic extends PureComponent {
     let { errorToShow, options } = this.state
     let defaultOnContinue = () => {
       reset(defaultSubs.error, {})
-      this.setState({errorToShow: null})
+      this.setState(() => ({errorToShow: null}))
       applyIf(tasks)
     }
     return defaultError(errorToShow, options.onErrorContinue || defaultOnContinue)
@@ -257,6 +321,7 @@ class Atomic extends PureComponent {
   renderLoading() {
     return (this.state.options.showDefaultPreloader && defaultLoading) ? defaultLoading() : null
   }
+
 
   render() {
     if (this.isError()) {
@@ -267,20 +332,21 @@ class Atomic extends PureComponent {
       return this.renderLoading()
     }
 
-    return createElement(DumbComponent, merge(this.props, this.state.store))
+    if (this.state.tasksStarted) {
+      return h(DumbComponent, merge(this.props, this.state.store))
+    }
+
+    return null
   }
 
-}
+})
 
-let buildAtomic = ({
+export let buildAtomic = ({
   defaultState,
   defaultLoading,
   defaultError,
   defaultOptions,
-  defaultSubs = {
-    loading: loadingState,
-    error: errorState
-  }
+  defaultSubs = { loading: atom({}), error: atom({}), cancel: atom({})}
 }) => ({
   SubsAtoms: Atomic({
     defaultState,
@@ -298,4 +364,5 @@ let buildAtomic = ({
 })
 
 export default buildAtomic
+
 
