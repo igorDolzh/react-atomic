@@ -1,24 +1,25 @@
+/* eslint-env node */
 let path = require('path')
 let webpack = require('webpack')
 
 let plugins =
   process.env.NODE_ENV === 'production' ?
-  [
-    new webpack.optimize.ModuleConcatenationPlugin(),
-    new webpack.optimize.UglifyJsPlugin({
-      minify: true,
-      beautify: false
-    })
-  ] :
-  [
-    new webpack.optimize.UglifyJsPlugin({
-      minify: false,
-      beautify: true
-    })
-  ]
+    [
+      new webpack.optimize.ModuleConcatenationPlugin(),
+      new webpack.optimize.UglifyJsPlugin({
+        minify: true,
+        beautify: false
+      })
+    ] :
+    [
+      new webpack.optimize.UglifyJsPlugin({
+        minify: false,
+        beautify: true
+      })
+    ]
 
 module.exports = {
-  entry: './src/atomic.js',
+  entry: './src/atomic/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: process.env.NODE_ENV === 'production' ? 'atomic.min.js' : 'atomic.js',

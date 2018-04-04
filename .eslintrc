@@ -1,0 +1,320 @@
+{
+  "parser": "babel-eslint",
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es6": true,
+    "node": true,
+    "jest": true
+  },
+  "settings": {
+    "import/resolver": {
+      "webpack": {
+        "config": "webpack.config.js"
+      }
+    }
+  },
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "globals": {
+    "SyntheticEvent": true,
+    "SyntheticInputEvent": true
+  },
+  "rules": {
+    "indent": [
+      "error",
+      2,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "args": "none"
+      }
+    ],
+    "max-len": [
+      "warn",
+      {
+        "code": 100,
+        "ignoreUrls": true
+      }
+    ],
+    "no-underscore-dangle": [
+      "error"
+    ],
+    "no-param-reassign": [
+      "error"
+    ],
+    "no-mixed-operators": [
+      "error"
+    ],
+    "camelcase": [
+      "warn",
+      {
+        "properties": "always"
+      }
+    ],
+    "no-useless-escape": [
+      "error"
+    ],
+    "arrow-body-style": [
+      "warn",
+      "as-needed"
+    ],
+    "one-var": [
+      "error",
+      "never"
+    ],
+    "array-callback-return": [
+      "warn"
+    ],
+    "prefer-arrow-callback": [
+      "warn"
+    ],
+    "eqeqeq": [
+      "error"
+    ],
+    "no-case-declarations": [
+      "warn"
+    ],
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": true
+      }
+    ],
+    "no-undef": [
+      "error"
+    ],
+    "no-return-assign": [
+      "warn",
+      "always"
+    ],
+    "no-void": [
+      "error"
+    ],
+    "space-before-function-paren": [
+      "error",
+      "never"
+    ],
+    "comma-spacing": [
+      "error",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "default-case": "error",
+    "eol-last": [
+      "error",
+      "always"
+    ],
+    "no-bitwise": [
+      "error"
+    ],
+    "no-extend-native": [
+      "error"
+    ],
+    "no-plusplus": [
+      "error"
+    ],
+    "no-unused-expressions": [
+      "error"
+    ],
+    "no-var": [
+      "error"
+    ],
+    "padded-blocks": [
+      "error",
+      "never"
+    ],
+    "prefer-rest-params": [
+      "error"
+    ],
+    "vars-on-top": [
+      "error"
+    ],
+    "no-restricted-properties": [
+      "error",
+      {
+        "object": "localStorage",
+        "property": "getItem",
+        "message": "Use getItemFromLocalStorage from helpers instead"
+      },
+      {
+        "object": "localStorage",
+        "property": "setItem",
+        "message": "Use setItemToLocalStorage from helpers instead"
+      },
+      {
+        "object": "localStorage",
+        "property": "removeItem",
+        "message": "Use removeItemFromLocalStorage from helpers instead"
+      }
+    ],
+    "no-shadow": [
+      "warn"
+    ],
+    "no-nested-ternary": [
+      "warn"
+    ],
+    "no-console": [
+      "warn"
+    ],
+    "func-names": [
+      "warn",
+      "never"
+    ],
+    "consistent-return": [
+      "warn"
+    ],
+    "global-require": [
+      "warn"
+    ],
+    "prefer-const": [
+      "error"
+    ],
+    "comma-dangle": [
+      "error",
+      "always-multiline"
+    ],
+    "no-use-before-define": [
+      "warn"
+    ],
+    "no-confusing-arrow": [
+      "warn"
+    ],
+    "object-curly-spacing": [
+      "error",
+      "always"
+    ],
+    "block-scoped-var": [
+      "error"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs"
+    ],
+    "curly": [
+      "error",
+      "all"
+    ],
+    "dot-location": [
+      "warn",
+      "property"
+    ],
+    "keyword-spacing": [
+      "warn",
+      {
+        "after": true,
+        "before": true
+      }
+    ],
+    "no-empty": [
+      "warn"
+    ],
+    "no-extra-boolean-cast": [
+      "warn"
+    ],
+    "no-inner-declarations": [
+      "warn"
+    ],
+    "space-before-blocks": [
+      "error",
+      "always"
+    ],
+    "no-magic-numbers": [
+      "warn",
+      {
+        "ignore": [
+          0,
+          1
+        ]
+      }
+    ],
+    "sort-imports": [
+      "off"
+    ],
+    "complexity": [
+      "warn",
+      100
+    ],
+    "yoda": [
+      "warn"
+    ],
+    "semi": [
+      "error",
+      "never"
+    ],
+    "arrow-parens": [
+      "error",
+      "always"
+    ],
+    "prefer-template": [
+      "error"
+    ],
+    "react/no-did-mount-set-state": [
+      "error"
+    ],
+    "react/no-unused-prop-types": [
+      1
+    ],
+    "react/require-default-props": [
+      "warn"
+    ],
+    "react/prop-types": [
+      "warn"
+    ],
+    "react/no-multi-comp": [
+      "warn"
+    ],
+    "react/forbid-prop-types": [
+      "warn"
+    ],
+    "react/sort-comp": [
+      "warn",
+      {
+        "order": [
+          "static-methods",
+          "lifecycle",
+          "everything-else",
+          "render"
+        ]
+      }
+    ],
+    "react/no-direct-mutation-state": [
+      "warn"
+    ],
+    "react/no-typos": [
+      "error"
+    ],
+    "react/no-find-dom-node": [
+      "warn"
+    ],
+    "import/first": [
+      "warn"
+    ],
+    "import/no-duplicates": [
+      "error"
+    ],
+    "import/no-unresolved": [
+      "error"
+    ],
+    "import/no-webpack-loader-syntax": [
+      "warn"
+    ],
+    "import/no-mutable-exports": [
+      "error"
+    ],
+    "import/no-extraneous-dependencies": [
+      "warn"
+    ]
+  }
+}
