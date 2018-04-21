@@ -4,10 +4,13 @@ import { watch, deref } from './helpers'
 
 export const subscribe = ({ subs, actions }, DumbComponent) =>
   class Atomic extends PureComponent {
-    state = {
-      store: {},
-      actions: {},
-      unsubs: {},
+    constructor(props) {
+      super(props)
+      this.state = {
+        store: {},
+        actions: {},
+        unsubs: {},
+      }
     }
 
     componentWillMount() {

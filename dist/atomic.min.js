@@ -14382,22 +14382,17 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
   return function (_PureComponent) {
     _inherits(Atomic, _PureComponent);
 
-    function Atomic() {
-      var _ref2;
-
-      var _temp, _this, _ret;
-
+    function Atomic(props) {
       _classCallCheck(this, Atomic);
 
-      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
+      var _this = _possibleConstructorReturn(this, (Atomic.__proto__ || Object.getPrototypeOf(Atomic)).call(this, props));
 
-      return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref2 = Atomic.__proto__ || Object.getPrototypeOf(Atomic)).call.apply(_ref2, [this].concat(args))), _this), _this.state = {
+      _this.state = {
         store: {},
         actions: {},
         unsubs: {}
-      }, _temp), _possibleConstructorReturn(_this, _ret);
+      };
+      return _this;
     }
 
     _createClass(Atomic, [{
