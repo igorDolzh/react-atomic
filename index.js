@@ -1,2 +1,3 @@
-import buildAtomic from './dist/atomic'
-export default buildAtomic
+export {
+  Atom, BasicAtom, ComputedAtom, Cursor, subscribe, atom, deref, reset, swap, watch, cursor, watchOnce, computed, 
+} from './src/atomic'
