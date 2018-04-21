@@ -1,11 +1,12 @@
-import { assoc, merge, values, keys, forEach } from 'ramda'
+import { assoc, mergeAll, values, keys, forEach } from 'ramda'
 import { createElement, PureComponent } from 'react'
 import { watch, deref } from './helpers'
 
-export const subscribe = ({ subs }, DumbComponent) =>
+export const subscribe = ({ subs, actions }, DumbComponent) =>
   class Atomic extends PureComponent {
     state = {
       store: {},
+      actions: {},
       unsubs: {},
     }
 
@@ -20,7 +21,7 @@ export const subscribe = ({ subs }, DumbComponent) =>
     setWatchers() {
       const subsObj = subs({
         props: this.props,
-        store: this.state.store,
+        subs: this.state.store,
       })
       const subsKeys = keys(subsObj)
       let { store } = this.state
@@ -42,6 +43,15 @@ export const subscribe = ({ subs }, DumbComponent) =>
       this.setState({
         store,
         unsubs,
+      }, () => {
+        if (actions) {
+          this.setState({
+            actions: actions({
+              props: this.props,
+              subs: this.state.store,
+            }),
+          })
+        }
       })
     }
 
@@ -53,10 +63,13 @@ export const subscribe = ({ subs }, DumbComponent) =>
 
     render() {
       return createElement(DumbComponent,
-        merge(
+        mergeAll([
           this.props,
-          this.state.store
-        )
+          this.state.store,
+          {
+            actions: this.state.actions,
+          },
+        ])
       )
     }
   }

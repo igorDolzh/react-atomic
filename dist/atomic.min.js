@@ -14368,7 +14368,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
-  var subs = _ref.subs;
+  var subs = _ref.subs,
+      actions = _ref.actions;
   return function (_PureComponent) {
     _inherits(Atomic, _PureComponent);
 
@@ -14385,6 +14386,7 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
 
       return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref2 = Atomic.__proto__ || Object.getPrototypeOf(Atomic)).call.apply(_ref2, [this].concat(args))), _this), _this.state = {
         store: {},
+        actions: {},
         unsubs: {}
       }, _temp), _possibleConstructorReturn(_this, _ret);
     }
@@ -14406,7 +14408,7 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
 
         var subsObj = subs({
           props: this.props,
-          store: this.state.store
+          subs: this.state.store
         });
         var subsKeys = (0, _ramda.keys)(subsObj);
         var store = this.state.store;
@@ -14430,6 +14432,15 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
         this.setState({
           store: store,
           unsubs: unsubs
+        }, function () {
+          if (actions) {
+            _this2.setState({
+              actions: actions({
+                props: _this2.props,
+                subs: _this2.state.store
+              })
+            });
+          }
         });
       }
     }, {
@@ -14445,7 +14456,9 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
     }, {
       key: 'render',
       value: function render() {
-        return (0, _react.createElement)(DumbComponent, (0, _ramda.merge)(this.props, this.state.store));
+        return (0, _react.createElement)(DumbComponent, (0, _ramda.mergeAll)([this.props, this.state.store, {
+          actions: this.state.actions
+        }]));
       }
     }]);
 
