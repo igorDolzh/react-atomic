@@ -6384,6 +6384,15 @@ Object.defineProperty(exports, 'computed', {
   }
 });
 
+var _BasicAtom = __webpack_require__(336);
+
+Object.defineProperty(exports, 'BasicAtom', {
+  enumerable: true,
+  get: function get() {
+    return _BasicAtom.BasicAtom;
+  }
+});
+
 /***/ }),
 /* 131 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
@@ -16012,6 +16021,61 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
+
+/***/ }),
+/* 336 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BasicAtom = exports.BasicAtom = function () {
+  function BasicAtom(atom) {
+    _classCallCheck(this, BasicAtom);
+
+    this.atom = atom;
+  }
+
+  _createClass(BasicAtom, [{
+    key: "get",
+    value: function get() {
+      return this.atom;
+    }
+  }, {
+    key: "getValue",
+    value: function getValue() {
+      return this.atom.deref();
+    }
+  }, {
+    key: "setValue",
+    value: function setValue(newVal) {
+      this.atom.reset(newVal);
+      return this.getValue();
+    }
+  }, {
+    key: "applyFunc",
+    value: function applyFunc(func) {
+      this.atom.swap(func);
+      return this.getValue();
+    }
+  }, {
+    key: "setWatcher",
+    value: function setWatcher(callback) {
+      this.atom.watch(callback);
+      return this.getValue();
+    }
+  }]);
+
+  return BasicAtom;
+}();
 
 /***/ })
 /******/ ]);
