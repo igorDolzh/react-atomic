@@ -1,21 +1,21 @@
 /* eslint-env node */
-let path = require('path')
-let webpack = require('webpack')
+const path = require('path')
+const webpack = require('webpack')
 
-let plugins =
+const plugins =
   process.env.NODE_ENV === 'production' ?
     [
       new webpack.optimize.ModuleConcatenationPlugin(),
       new webpack.optimize.UglifyJsPlugin({
         minify: true,
-        beautify: false
-      })
+        beautify: false,
+      }),
     ] :
     [
       new webpack.optimize.UglifyJsPlugin({
         minify: false,
-        beautify: true
-      })
+        beautify: true,
+      }),
     ]
 
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: process.env.NODE_ENV === 'production' ? 'atomic.min.js' : 'atomic.js',
-    libraryTarget: 'umd'
+    libraryTarget: 'umd',
   },
   module: {
     rules: [
@@ -32,9 +32,9 @@ module.exports = {
         exclude: /node_modules/,
         use: ['babel-loader'],
         include: [
-          /src\/.*/
-        ]
-      }
-    ]
+          /src\/.*/,
+        ],
+      },
+    ],
   },
 }
