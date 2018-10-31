@@ -11,9 +11,6 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
         actions: {},
         unsubs: {},
       }
-    }
-
-    componentWillMount() {
       this.setWatchers()
     }
 
