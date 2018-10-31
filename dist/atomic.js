@@ -14392,15 +14392,11 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
         actions: {},
         unsubs: {}
       };
+      _this.setWatchers();
       return _this;
     }
 
     _createClass(Atomic, [{
-      key: 'componentWillMount',
-      value: function componentWillMount() {
-        this.setWatchers();
-      }
-    }, {
       key: 'componentWillUnmount',
       value: function componentWillUnmount() {
         this.unsubscribeWatchers();
