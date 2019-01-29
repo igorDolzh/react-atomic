@@ -10,7 +10,7 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
         props,
       })
       const subsKeys = keys(subsObj)
-      let { store } = this.state
+      let store = {}
       const unsubs = {}
 
       forEach((key) => {

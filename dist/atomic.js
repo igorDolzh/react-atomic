@@ -14391,8 +14391,7 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
         props: props
       });
       var subsKeys = (0, _ramda.keys)(subsObj);
-      var store = _this.state.store;
-
+      var store = {};
       var unsubs = {};
 
       (0, _ramda.forEach)(function (key) {
