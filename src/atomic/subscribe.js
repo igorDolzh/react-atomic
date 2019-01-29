@@ -39,20 +39,14 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
         unsubs[key] = unsub
       }, subsKeys)
 
-
-      this.setState({
+      this.state = {
         store,
         unsubs,
-      }, () => {
-        if (actions) {
-          this.setState({
-            actions: actions({
-              props: this.props,
-              subs: this.state.store,
-            }),
-          })
-        }
-      })
+        actions: actions ? actions({
+          props: this.props,
+          subs: this.state.store,
+        }) : {},
+      }
     }
 
     unsubscribeWatchers() {
