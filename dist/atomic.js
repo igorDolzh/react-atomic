@@ -14412,8 +14412,7 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
         store: store,
         unsubs: unsubs,
         actions: actions ? actions({
-          props: props,
-          subs: _this.state.store
+          props: props
         }) : {}
       };
       return _this;

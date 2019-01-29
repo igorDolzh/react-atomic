@@ -30,7 +30,6 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
         unsubs,
         actions: actions ? actions({
           props,
-          subs: this.state.store,
         }) : {},
       }
     }
