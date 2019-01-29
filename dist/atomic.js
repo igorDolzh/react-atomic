@@ -14388,8 +14388,7 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
       var _this = _possibleConstructorReturn(this, (Atomic.__proto__ || Object.getPrototypeOf(Atomic)).call(this, props));
 
       var subsObj = subs({
-        props: props,
-        subs: _this.state.store
+        props: props
       });
       var subsKeys = (0, _ramda.keys)(subsObj);
       var store = _this.state.store;

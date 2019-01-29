@@ -8,7 +8,6 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
       super(props)
       const subsObj = subs({
         props,
-        subs: this.state.store,
       })
       const subsKeys = keys(subsObj)
       let { store } = this.state
