@@ -14387,12 +14387,37 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
 
       var _this = _possibleConstructorReturn(this, (Atomic.__proto__ || Object.getPrototypeOf(Atomic)).call(this, props));
 
+      var subsObj = subs({
+        props: props,
+        subs: _this.state.store
+      });
+      var subsKeys = (0, _ramda.keys)(subsObj);
+      var store = _this.state.store;
+
+      var unsubs = {};
+
+      (0, _ramda.forEach)(function (key) {
+        store = (0, _ramda.assoc)(key, (0, _helpers.deref)(subsObj[key]), store);
+
+        var unsub = (0, _helpers.watch)(subsObj[key], function (newVal) {
+          _this.setState(function (prevState) {
+            return {
+              store: (0, _ramda.assoc)(key, newVal, prevState.store)
+            };
+          });
+        });
+
+        unsubs[key] = unsub;
+      }, subsKeys);
+
       _this.state = {
-        store: {},
-        actions: {},
-        unsubs: {}
+        store: store,
+        unsubs: unsubs,
+        actions: actions ? actions({
+          props: props,
+          subs: _this.state.store
+        }) : {}
       };
-      _this.setWatchers();
       return _this;
     }
 
@@ -14400,48 +14425,6 @@ var subscribe = exports.subscribe = function subscribe(_ref, DumbComponent) {
       key: 'componentWillUnmount',
       value: function componentWillUnmount() {
         this.unsubscribeWatchers();
-      }
-    }, {
-      key: 'setWatchers',
-      value: function setWatchers() {
-        var _this2 = this;
-
-        var subsObj = subs({
-          props: this.props,
-          subs: this.state.store
-        });
-        var subsKeys = (0, _ramda.keys)(subsObj);
-        var store = this.state.store;
-
-        var unsubs = {};
-
-        (0, _ramda.forEach)(function (key) {
-          store = (0, _ramda.assoc)(key, (0, _helpers.deref)(subsObj[key]), store);
-
-          var unsub = (0, _helpers.watch)(subsObj[key], function (newVal) {
-            _this2.setState(function (prevState) {
-              return {
-                store: (0, _ramda.assoc)(key, newVal, prevState.store)
-              };
-            });
-          });
-
-          unsubs[key] = unsub;
-        }, subsKeys);
-
-        this.setState({
-          store: store,
-          unsubs: unsubs
-        }, function () {
-          if (actions) {
-            _this2.setState({
-              actions: actions({
-                props: _this2.props,
-                subs: _this2.state.store
-              })
-            });
-          }
-        });
       }
     }, {
       key: 'unsubscribeWatchers',

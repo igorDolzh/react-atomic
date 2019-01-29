@@ -6,21 +6,8 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
   class Atomic extends PureComponent {
     constructor(props) {
       super(props)
-      this.state = {
-        store: {},
-        actions: {},
-        unsubs: {},
-      }
-      this.setWatchers()
-    }
-
-    componentWillUnmount() {
-      this.unsubscribeWatchers()
-    }
-
-    setWatchers() {
       const subsObj = subs({
-        props: this.props,
+        props,
         subs: this.state.store,
       })
       const subsKeys = keys(subsObj)
@@ -43,10 +30,14 @@ export const subscribe = ({ subs, actions }, DumbComponent) =>
         store,
         unsubs,
         actions: actions ? actions({
-          props: this.props,
+          props,
           subs: this.state.store,
         }) : {},
       }
+    }
+
+    componentWillUnmount() {
+      this.unsubscribeWatchers()
     }
 
     unsubscribeWatchers() {
